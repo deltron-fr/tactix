@@ -1,114 +1,160 @@
 package main
 
 import (
-	"errors"
+	"bufio"
+	"fmt"
+	"os"
 	"strconv"
+
+	"github.com/deltron-fr/tactix/internal/engine"
 )
 
-type Board [][]move
+func startRepl() {
+	scanner := bufio.NewScanner(os.Stdin)
 
-type Config struct {
-	board Board
+	initBoard := engine.Board{
+		{engine.EMPTY, engine.EMPTY, engine.EMPTY},
+		{engine.EMPTY, engine.EMPTY, engine.EMPTY},
+		{engine.EMPTY, engine.EMPTY, engine.EMPTY},
+	}
+
+	gameConfig := &engine.Config{Board: initBoard}
+
+	fmt.Println("================ Welcome to TacTix! ===============")
+	fmt.Println("=================================================")
+	fmt.Println("		1  |  2  |  3		")
+	fmt.Println("		-------------		")
+	fmt.Println("		4  |  5  |  6		")
+	fmt.Println("		--------------		")
+	fmt.Println("		7  |  8  |  9		")
+
+	fmt.Println("Game has started!")
+
+	userPlayerInput := ""
+
+	for {
+		fmt.Printf("Are you X or O? > ")
+		if scanner.Scan() {
+			userPlayerInput = scanner.Text()
+			if userPlayerInput != "X" && userPlayerInput != "O" {
+				fmt.Println("enter a valid choice!")
+			} else {
+				break
+			}
+		}
+	}
+
+	userPlayer := stringToMove(userPlayerInput)
+
+	for {
+		fmt.Printf("Player input >> ")
+
+		if scanner.Scan() {
+			userInput := scanner.Text()
+			win, err := engine.PlayMove(userInput, gameConfig, userPlayer, "Player")
+			if err != nil {
+				fmt.Printf("error: %v\n", err)
+				continue
+			}
+			printBoard(gameConfig)
+
+			if win != "" {
+				if win == "Draw" {
+					fmt.Println("The Game has ended as a draw!")
+					return
+				}
+
+				fmt.Printf("%s wins!\n", win)
+				return
+			}
+
+		}
+
+		aiPlayer := engine.EMPTY
+		if userPlayer == engine.X {
+			aiPlayer = engine.O
+		} else {
+			aiPlayer = engine.X
+		}
+
+		fmt.Printf("AI plays!\n")
+
+		action := engine.Minimax(gameConfig.Board, userPlayer)
+		aiMove := coordToInt(action)
+
+		win, _ := engine.PlayMove(strconv.Itoa(aiMove), gameConfig, aiPlayer, "AI")
+		printBoard(gameConfig)
+
+		if win != "" {
+			if win == "Draw" {
+				fmt.Println("The Game has ended as a draw!")
+				return
+			}
+
+			fmt.Printf("%s wins!\n", win)
+			return
+		}
+	}
 }
 
-func playMove(userMove string, cfg *Config, gamePlayer move, playerName string) (string, error) {
+func coordToInt(action []int) int {
+	value := 0
 
-	// char, pos := r[0], int(r[1] - '0')
-
-	pos, err := strconv.Atoi(userMove)
-	if err != nil {
-		return "", errors.New("input a valid number")
-	}
-
-
-	if pos < 1 || pos > 9 {
-		return "", errors.New("number isn't a valid position on the board")
-	}
-
-	switch pos{
+	switch action[0] {
+	case 0:
+		if action[1] == 0 {
+			value = 1
+		} else if action[1] == 1 {
+			value = 2
+		} else if action[1] == 2 {
+			value = 3
+		}
 	case 1:
-		err := verifyMove(cfg, 0, 0)
-		if err != nil {
-			return "", err
+		if action[1] == 0 {
+			value = 4
+		} else if action[1] == 1 {
+			value = 5
+		} else if action[1] == 2 {
+			value = 6
 		}
-
-		cfg.board[0][0] = gamePlayer
 	case 2:
-		err := verifyMove(cfg, 0, 1)
-		if err != nil {
-			return "", err
+		if action[1] == 0 {
+			value = 7
+		} else if action[1] == 1 {
+			value = 8
+		} else if action[1] == 2 {
+			value = 9
 		}
-		
-		cfg.board[0][1] = gamePlayer
-	case 3:
-		err := verifyMove(cfg, 0, 2)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[0][2] = gamePlayer
-	case 4:
-		err := verifyMove(cfg, 1, 0)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[1][0] = gamePlayer
-	case 5:
-		err := verifyMove(cfg, 1, 1)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[1][1] = gamePlayer
-	case 6:
-		err := verifyMove(cfg, 1, 2)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[1][2] = gamePlayer
-	case 7:
-		err := verifyMove(cfg, 2, 0)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[2][0] = gamePlayer
-	case 8:
-		err := verifyMove(cfg, 2, 1)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[2][1] = gamePlayer
-	case 9:
-		err := verifyMove(cfg, 2, 2)
-		if err != nil {
-			return "", err
-		}
-		
-		cfg.board[2][2] = gamePlayer
 	}
 
-	gameWinner := ""
-	if terminal(cfg.board) {
-		winner := winner(cfg.board)
-		switch winner {
-		case EMPTY:
-			gameWinner = "Draw"
-		default:
-			gameWinner = playerName
-		}	
-	}
-
-	return gameWinner, nil
+	return value
 }
 
-func verifyMove(cfg *Config, row, col int) error {
-	if cfg.board[row][col] != EMPTY {
-		return errors.New("invalid move")
+func printBoard(cfg *engine.Config) {
+
+	for i := 0; i < 3; i++ {
+		for i := 0; i < 3; i++ {
+			if cfg.Board[i][i] != engine.X && cfg.Board[i][i] != engine.O {
+				cfg.Board[i][i] = engine.EMPTY
+			}
+		}
 	}
 
-	return nil
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[0][0].String(), cfg.Board[0][1].String(), cfg.Board[0][2].String())
+	fmt.Println("		-------------")
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[1][0].String(), cfg.Board[1][1].String(), cfg.Board[1][2].String())
+	fmt.Println("		--------------	")
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[2][0].String(), cfg.Board[2][1].String(), cfg.Board[2][2].String())
+	fmt.Println()
+}
+
+func stringToMove(input string) engine.Move {
+	switch input {
+	case engine.X.String():
+		return engine.X
+	case engine.O.String():
+		return engine.O
+	}
+
+	return engine.EMPTY
 }
