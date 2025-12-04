@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 
@@ -12,9 +13,9 @@ func startRepl() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	initBoard := Board{
-		{'-', '-', '-'},
-		{'-', '-', '-'},
-		{'-', '-', '-'},
+		{EMPTY, EMPTY, EMPTY},
+		{EMPTY, EMPTY, EMPTY},
+		{EMPTY, EMPTY, EMPTY},
 	}
 	
 	gameConfig := &Config{board: initBoard}
@@ -28,27 +29,72 @@ func startRepl() {
 	fmt.Println("		7  |  8  |  9		")
 
 	fmt.Println("Game has started!")
+
+	userPlayerInput := ""
+
 	for {
-		
-		fmt.Printf("player 1 input >> ")
-
+		fmt.Printf("Are you X or O? > ")
 		if scanner.Scan() {
-			userInput := scanner.Text()
-			_ = playMove(userInput, gameConfig)
-
-			printBoard(gameConfig)
-			
+			userPlayerInput = scanner.Text()
+			if userPlayerInput != "X" && userPlayerInput != "O" {
+				fmt.Println("enter a valid choice!")
+			} else {
+				break
 			}
-		fmt.Printf("player 2 input >> ")
-
-		if scanner.Scan() {
-			userInput := scanner.Text()
-			_ = playMove(userInput, gameConfig)
-
-			printBoard(gameConfig)
-
 		}
 	}
+	
+	userPlayer := stringToMove(userPlayerInput)
+
+	for {	
+		fmt.Printf("Player input >> ")
+
+		if scanner.Scan() {
+			userInput := scanner.Text()
+			win, err := playMove(userInput, gameConfig, userPlayer, "Player")
+			if err != nil {
+				fmt.Printf("error: %v\n", err)
+				continue
+			}
+			printBoard(gameConfig)
+
+			if win != "" {
+				if win == "Draw" {
+					fmt.Println("The Game has ended as a draw!")
+					return
+				}
+
+				fmt.Printf("%s wins!\n", win)
+				return
+			}
+
+		}
+
+		aiPlayer := EMPTY
+		if userPlayer == X {
+			aiPlayer = O
+		} else {
+			aiPlayer = X
+		}
+
+		fmt.Printf("AI plays!\n")
+
+		action := minimax(gameConfig.board, userPlayer)
+		aiMove := coordToInt(action)
+		
+		win, _ := playMove(strconv.Itoa(aiMove), gameConfig, aiPlayer, "AI")
+		printBoard(gameConfig)
+
+		if win != "" {
+				if win == "Draw" {
+					fmt.Println("The Game has ended as a draw!")
+					return
+				}
+
+				fmt.Printf("%s wins!\n", win)
+				return
+			}
+		}
 }
 
 
@@ -56,17 +102,28 @@ func printBoard(cfg *Config) {
 
 	for i := 0; i < 3; i++ {
 		for i := 0; i < 3; i++ {
-			if cfg.board[i][i] != 'X' && cfg.board[i][i] != 'O' {
-						cfg.board[i][i] = '-'
+			if cfg.board[i][i] != X && cfg.board[i][i] != O {
+						cfg.board[i][i] = EMPTY
 					}
 		}
 	}
 
 
-	fmt.Printf("		%c  |  %c  |  %c		\n", cfg.board[0][0], cfg.board[0][1], cfg.board[0][2])
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.board[0][0].String(), cfg.board[0][1].String(), cfg.board[0][2].String())
 	fmt.Println("		-------------")
-	fmt.Printf("		%c  |  %c  |  %c		\n", cfg.board[1][0], cfg.board[1][1], cfg.board[1][2])
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.board[1][0].String(), cfg.board[1][1].String(), cfg.board[1][2].String())
 	fmt.Println("		--------------	")
-	fmt.Printf("		%c  |  %c  |  %c		\n", cfg.board[2][0], cfg.board[2][1], cfg.board[2][2])
+	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.board[2][0].String(), cfg.board[2][1].String(), cfg.board[2][2].String())
 	fmt.Println()
+}
+
+func stringToMove(input string) move {
+	switch input {
+	case X.String():
+		return X
+	case O.String():
+		return O
+	}
+
+	return EMPTY
 }

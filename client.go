@@ -1,36 +1,114 @@
 package main
 
-type Board [][]rune
+import (
+	"errors"
+	"strconv"
+)
+
+type Board [][]move
 
 type Config struct {
 	board Board
 }
 
-func playMove(userMove string, cfg *Config) *Board {
-	r := []rune(userMove)
+func playMove(userMove string, cfg *Config, gamePlayer move, playerName string) (string, error) {
 
-	char, pos := r[0], int(r[1] - '0')
+	// char, pos := r[0], int(r[1] - '0')
+
+	pos, err := strconv.Atoi(userMove)
+	if err != nil {
+		return "", errors.New("input a valid number")
+	}
+
+
+	if pos < 1 || pos > 9 {
+		return "", errors.New("number isn't a valid position on the board")
+	}
 
 	switch pos{
 	case 1:
-		cfg.board[0][0] = char
+		err := verifyMove(cfg, 0, 0)
+		if err != nil {
+			return "", err
+		}
+
+		cfg.board[0][0] = gamePlayer
 	case 2:
-		cfg.board[0][1] = char
+		err := verifyMove(cfg, 0, 1)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[0][1] = gamePlayer
 	case 3:
-		cfg.board[0][2] = char
+		err := verifyMove(cfg, 0, 2)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[0][2] = gamePlayer
 	case 4:
-		cfg.board[1][0] = char
+		err := verifyMove(cfg, 1, 0)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[1][0] = gamePlayer
 	case 5:
-		cfg.board[1][1] = char
+		err := verifyMove(cfg, 1, 1)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[1][1] = gamePlayer
 	case 6:
-		cfg.board[1][2] = char
+		err := verifyMove(cfg, 1, 2)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[1][2] = gamePlayer
 	case 7:
-		cfg.board[2][0] = char
+		err := verifyMove(cfg, 2, 0)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[2][0] = gamePlayer
 	case 8:
-		cfg.board[2][1] = char
+		err := verifyMove(cfg, 2, 1)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[2][1] = gamePlayer
 	case 9:
-		cfg.board[2][2] = char
+		err := verifyMove(cfg, 2, 2)
+		if err != nil {
+			return "", err
+		}
+		
+		cfg.board[2][2] = gamePlayer
 	}
 
-	return &cfg.board
+	gameWinner := ""
+	if terminal(cfg.board) {
+		winner := winner(cfg.board)
+		switch winner {
+		case EMPTY:
+			gameWinner = "Draw"
+		default:
+			gameWinner = playerName
+		}	
+	}
+
+	return gameWinner, nil
+}
+
+func verifyMove(cfg *Config, row, col int) error {
+	if cfg.board[row][col] != EMPTY {
+		return errors.New("invalid move")
+	}
+
+	return nil
 }
