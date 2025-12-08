@@ -3,14 +3,88 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"log"
 	"strconv"
 
 	"github.com/deltron-fr/tactix/internal/engine"
+	"github.com/gorilla/websocket"
 )
 
-func startRepl() {
-	scanner := bufio.NewScanner(os.Stdin)
+type Client struct {
+	connection *websocket.Conn
+	manager    *Manager
+	game       *Game
+}
+
+func NewClient(conn *websocket.Conn, manager *Manager, game *Game) *Client {
+	return &Client{
+		connection: conn,
+		manager:    manager,
+		game:       game,
+	}
+}
+
+func createClient() {
+	URL := "ws://localhost:8080/ws"
+	dialer := websocket.Dialer{}
+	conn, _, err := dialer.Dial(URL, nil)
+	if err != nil {
+		log.Fatal("Dial:", err)
+	}
+	defer conn.Close()
+
+}
+
+func player(scanner *bufio.Scanner) {
+	URL := "ws://localhost:8080/ws"
+	dialer := websocket.Dialer{}
+	conn, _, err := dialer.Dial(URL, nil)
+	if err != nil {
+		log.Fatal("Dial:", err)
+	}
+	defer conn.Close()
+
+	for {
+		fmt.Printf("Player input >> ")
+
+		if scanner.Scan() {
+			userInput := scanner.Text()
+			err := conn.WriteMessage(websocket.TextMessage, []byte(userInput))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+
+		go func() {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("\nServer >> %s\nPlayer input >> ", msg)
+		}()
+	}
+
+	
+}
+
+func (c *Client) readMessages() {
+	for {
+		messageType, payload, err := c.connection.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("unexpected close: %v", err)
+
+			}
+			break
+		}
+		log.Println(messageType)
+		log.Println(payload)
+	}
+}
+
+func playAI(scanner *bufio.Scanner) {
 
 	initBoard := engine.Board{
 		{engine.EMPTY, engine.EMPTY, engine.EMPTY},
@@ -19,16 +93,6 @@ func startRepl() {
 	}
 
 	gameConfig := &engine.Config{Board: initBoard}
-
-	fmt.Println("================ Welcome to TacTix! ===============")
-	fmt.Println("=================================================")
-	fmt.Println("		1  |  2  |  3		")
-	fmt.Println("		-------------		")
-	fmt.Println("		4  |  5  |  6		")
-	fmt.Println("		--------------		")
-	fmt.Println("		7  |  8  |  9		")
-
-	fmt.Println("Game has started!")
 
 	userPlayerInput := ""
 
@@ -95,66 +159,4 @@ func startRepl() {
 			return
 		}
 	}
-}
-
-func coordToInt(action []int) int {
-	value := 0
-
-	switch action[0] {
-	case 0:
-		if action[1] == 0 {
-			value = 1
-		} else if action[1] == 1 {
-			value = 2
-		} else if action[1] == 2 {
-			value = 3
-		}
-	case 1:
-		if action[1] == 0 {
-			value = 4
-		} else if action[1] == 1 {
-			value = 5
-		} else if action[1] == 2 {
-			value = 6
-		}
-	case 2:
-		if action[1] == 0 {
-			value = 7
-		} else if action[1] == 1 {
-			value = 8
-		} else if action[1] == 2 {
-			value = 9
-		}
-	}
-
-	return value
-}
-
-func printBoard(cfg *engine.Config) {
-
-	for i := 0; i < 3; i++ {
-		for i := 0; i < 3; i++ {
-			if cfg.Board[i][i] != engine.X && cfg.Board[i][i] != engine.O {
-				cfg.Board[i][i] = engine.EMPTY
-			}
-		}
-	}
-
-	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[0][0].String(), cfg.Board[0][1].String(), cfg.Board[0][2].String())
-	fmt.Println("		-------------")
-	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[1][0].String(), cfg.Board[1][1].String(), cfg.Board[1][2].String())
-	fmt.Println("		--------------	")
-	fmt.Printf("		%s  |  %s  |  %s		\n", cfg.Board[2][0].String(), cfg.Board[2][1].String(), cfg.Board[2][2].String())
-	fmt.Println()
-}
-
-func stringToMove(input string) engine.Move {
-	switch input {
-	case engine.X.String():
-		return engine.X
-	case engine.O.String():
-		return engine.O
-	}
-
-	return engine.EMPTY
 }

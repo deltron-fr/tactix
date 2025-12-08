@@ -35,63 +35,63 @@ func PlayMove(userMove string, cfg *Config, gamePlayer Move, playerName string) 
 
 	switch pos{
 	case 1:
-		err := verifyMove(cfg, 0, 0)
+		err := VerifyMove(cfg, 0, 0)
 		if err != nil {
 			return "", err
 		}
 
 		cfg.Board[0][0] = gamePlayer
 	case 2:
-		err := verifyMove(cfg, 0, 1)
+		err := VerifyMove(cfg, 0, 1)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[0][1] = gamePlayer
 	case 3:
-		err := verifyMove(cfg, 0, 2)
+		err := VerifyMove(cfg, 0, 2)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[0][2] = gamePlayer
 	case 4:
-		err := verifyMove(cfg, 1, 0)
+		err := VerifyMove(cfg, 1, 0)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[1][0] = gamePlayer
 	case 5:
-		err := verifyMove(cfg, 1, 1)
+		err := VerifyMove(cfg, 1, 1)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[1][1] = gamePlayer
 	case 6:
-		err := verifyMove(cfg, 1, 2)
+		err := VerifyMove(cfg, 1, 2)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[1][2] = gamePlayer
 	case 7:
-		err := verifyMove(cfg, 2, 0)
+		err := VerifyMove(cfg, 2, 0)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[2][0] = gamePlayer
 	case 8:
-		err := verifyMove(cfg, 2, 1)
+		err := VerifyMove(cfg, 2, 1)
 		if err != nil {
 			return "", err
 		}
 		
 		cfg.Board[2][1] = gamePlayer
 	case 9:
-		err := verifyMove(cfg, 2, 2)
+		err := VerifyMove(cfg, 2, 2)
 		if err != nil {
 			return "", err
 		}
@@ -100,8 +100,8 @@ func PlayMove(userMove string, cfg *Config, gamePlayer Move, playerName string) 
 	}
 
 	gameWinner := ""
-	if terminal(cfg.Board) {
-		winner := winner(cfg.Board)
+	if Terminal(cfg.Board) {
+		winner := Winner(cfg.Board)
 		switch winner {
 		case EMPTY:
 			gameWinner = "Draw"
@@ -164,7 +164,7 @@ func maxValue(board Board, initMove Move) (int, []int) {
 	//  then returns the best action(max value).
 	optimalAction := []int{}
 
-	if terminal(board) {
+	if Terminal(board) {
 		return utility(board), optimalAction
 	}
 
@@ -194,7 +194,7 @@ func minValue(board Board, initMove Move) (int, []int) {
 	//  then returns the best action(min value).
 	optimalAction := []int{}
 
-	if terminal(board) {
+	if Terminal(board) {
 		return utility(board), optimalAction
 	}
 
@@ -248,9 +248,9 @@ func result(board Board, action []int, initMove Move) (Board, error) {
 }
 
 
-func terminal(board Board) bool {
+func Terminal(board Board) bool {
 	// Returns true if game is over, false if it isn't.
-	if winner(board) != EMPTY {
+	if Winner(board) != EMPTY {
 		return true
 	}
 	
@@ -268,16 +268,16 @@ func terminal(board Board) bool {
 func utility(board Board) int {
 	// Returns the numerical value for final board state, 
 	// X wins - 1, O wins - (-1) and a draw - 0
-	if winner(board) == X {
+	if Winner(board) == X {
 		return 1
-	} else if winner(board) == O {
+	} else if Winner(board) == O {
 		return -1
 	}
 
 	return 0
 }
 
-func winner(board Board) Move {
+func Winner(board Board) Move {
 	// Returns winner of the gamme if any
 	winningLines := [][][]int{
 		{{0,0},{0,1},{0,2}}, // row 0
@@ -316,7 +316,7 @@ func winner(board Board) Move {
 }
 
 
-func verifyMove(cfg *Config, row, col int) error {
+func VerifyMove(cfg *Config, row, col int) error {
 	// Utility function to verify the players move
 	if cfg.Board[row][col] != EMPTY {
 		return errors.New("invalid move")
