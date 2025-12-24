@@ -41,7 +41,7 @@ func startRepl() {
 	if mode == "2" {
 		playAI(scanner)
 	}
-	
+
 }
 
 func coordToInt(action []int) int {

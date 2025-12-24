@@ -6,6 +6,8 @@ type Board [][]Move
 
 type Config struct {
 	Board Board
+    Player1 Move
+    Player2 Move
 }
 
 const (

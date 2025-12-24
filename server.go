@@ -1,23 +1,38 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
-	"sync"
 	"strconv"
-	"errors"
+	"sync"
 
-	"github.com/gorilla/websocket"
 	"github.com/deltron-fr/tactix/internal/engine"
+	"github.com/gorilla/websocket"
 )
 
 var (
 	upgrader = websocket.Upgrader{
-		ReadBufferSize: 1024,
+		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
 )
 
+type Client struct {
+	connection *websocket.Conn
+	manager    *Manager
+	game       *Game
+	symbol     engine.Move
+}
+
+func NewClient(conn *websocket.Conn, manager *Manager, game *Game, symbol engine.Move) *Client {
+	return &Client{
+		connection: conn,
+		manager:    manager,
+		game:       game,
+		symbol:     symbol,
+	}
+}
 
 type clientQueue struct {
 	Elements []*Client
@@ -46,25 +61,22 @@ func (c *clientQueue) Enqueue(item *Client) {
 	c.Elements = append(c.Elements, item)
 }
 
-
 type Manager struct {
-	games map[int]*Game
-	mu sync.Mutex
+	queue *clientQueue
+	mu    sync.Mutex
+}
+
+type Message struct {
+	Sender  *Client
+	Payload []byte
 }
 
 func NewManager() *Manager {
 	return &Manager{}
 }
 
-
 func (m *Manager) serveWS(w http.ResponseWriter, r *http.Request) {
 	log.Println("new connection")
-
-	queue := clientQueue{
-		Elements: nil,
-	}
-
-	broadcast := make(chan []byte)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -73,15 +85,20 @@ func (m *Manager) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	client := NewClient(conn, m, nil)
-	m.addClient(client, &queue)
+	switch m.queue.Size() {
+	case 0:
+		client := NewClient(conn, m, nil, engine.X)
+		m.addClient(client, m.queue)
+	case 1:
+		client := NewClient(conn, m, nil, engine.O)
+		m.addClient(client, m.queue)
+	}
 
 	m.mu.Lock()
-	if queue.Size() == 2 {
-
+	if m.queue.Size() == 2 {
 		players := make(map[*Client]bool)
-		firstClient, _ := queue.Dequeue()
-		secondClient, _ := queue.Dequeue()
+		firstClient, _ := m.queue.Dequeue()
+		secondClient, _ := m.queue.Dequeue()
 		players[firstClient] = true
 		players[secondClient] = true
 
@@ -91,35 +108,46 @@ func (m *Manager) serveWS(w http.ResponseWriter, r *http.Request) {
 			{engine.EMPTY, engine.EMPTY, engine.EMPTY},
 		}
 
-		gameConfig := &engine.Config{Board: initBoard}
+		gameConfig := &engine.Config{
+			Board:   initBoard,
+			Player1: engine.X,
+			Player2: engine.O,
+		}
+
 		newGame := Game{
-			Clients: players,
+			Clients:   players,
 			GameState: gameConfig,
 		}
 
 		firstClient.game = &newGame
 		secondClient.game = &newGame
 
-
-		for {
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			broadcast <- msg
-		}
-
-		go m.handleMessages(players, broadcast)
+		// go m.handleMessages(players, broadcast, &newGame)
 
 	}
 	m.mu.Unlock()
 }
 
-func (m *Manager) handleMessages(players map[*Client]bool, msg chan []byte) {
+func (c *Client) handleClients() {
+	msgChan := make(chan Message)
 	for {
+		_, msg, err := c.connection.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		clientMessage := Message{
+			Sender:  c,
+			Payload: msg,
+		}
+		msgChan <- clientMessage
+	}
+}
 
+func (m *Manager) handleMessages(players map[*Client]bool, msg chan []byte, gameState *Game) {
+	for {
 		message := <-msg
+		// validateMove(string(message), gameState.GameState)
 
 		for c, _ := range players {
 			err := c.connection.WriteMessage(websocket.TextMessage, message)
@@ -139,12 +167,11 @@ func validateMove(userMove string, cfg *engine.Config, gamePlayer engine.Move, p
 		return "", errors.New("input a valid number")
 	}
 
-
 	if pos < 1 || pos > 9 {
 		return "", errors.New("number isn't a valid position on the board")
 	}
 
-	switch pos{
+	switch pos {
 	case 1:
 		err := engine.VerifyMove(cfg, 0, 0)
 		if err != nil {
@@ -157,56 +184,56 @@ func validateMove(userMove string, cfg *engine.Config, gamePlayer engine.Move, p
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[0][1] = gamePlayer
 	case 3:
 		err := engine.VerifyMove(cfg, 0, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[0][2] = gamePlayer
 	case 4:
 		err := engine.VerifyMove(cfg, 1, 0)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][0] = gamePlayer
 	case 5:
 		err := engine.VerifyMove(cfg, 1, 1)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][1] = gamePlayer
 	case 6:
 		err := engine.VerifyMove(cfg, 1, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][2] = gamePlayer
 	case 7:
 		err := engine.VerifyMove(cfg, 2, 0)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][0] = gamePlayer
 	case 8:
 		err := engine.VerifyMove(cfg, 2, 1)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][1] = gamePlayer
 	case 9:
 		err := engine.VerifyMove(cfg, 2, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][2] = gamePlayer
 	}
 
@@ -218,7 +245,7 @@ func validateMove(userMove string, cfg *engine.Config, gamePlayer engine.Move, p
 			gameWinner = "Draw"
 		default:
 			gameWinner = playerName
-		}	
+		}
 	}
 
 	return gameWinner, nil

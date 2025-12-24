@@ -16,4 +16,3 @@ func SetupAPI() {
 
 	http.HandleFunc("/ws", manager.serveWS)
 }
-

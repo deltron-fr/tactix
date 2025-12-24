@@ -10,39 +10,32 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Client struct {
-	connection *websocket.Conn
-	manager    *Manager
-	game       *Game
-}
-
-func NewClient(conn *websocket.Conn, manager *Manager, game *Game) *Client {
-	return &Client{
-		connection: conn,
-		manager:    manager,
-		game:       game,
-	}
-}
-
-func createClient() {
+func createClient() *websocket.Conn {
 	URL := "ws://localhost:8080/ws"
 	dialer := websocket.Dialer{}
 	conn, _, err := dialer.Dial(URL, nil)
 	if err != nil {
 		log.Fatal("Dial:", err)
 	}
-	defer conn.Close()
+
+	return conn
 
 }
 
 func player(scanner *bufio.Scanner) {
-	URL := "ws://localhost:8080/ws"
-	dialer := websocket.Dialer{}
-	conn, _, err := dialer.Dial(URL, nil)
-	if err != nil {
-		log.Fatal("Dial:", err)
-	}
+	conn := createClient()
 	defer conn.Close()
+
+	go func() {
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("\nServer >> %s\nPlayer input >> ", msg)
+		}
+	}()
 
 	for {
 		fmt.Printf("Player input >> ")
@@ -55,32 +48,6 @@ func player(scanner *bufio.Scanner) {
 				return
 			}
 		}
-
-		go func() {
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			fmt.Printf("\nServer >> %s\nPlayer input >> ", msg)
-		}()
-	}
-
-	
-}
-
-func (c *Client) readMessages() {
-	for {
-		messageType, payload, err := c.connection.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("unexpected close: %v", err)
-
-			}
-			break
-		}
-		log.Println(messageType)
-		log.Println(payload)
 	}
 }
 
