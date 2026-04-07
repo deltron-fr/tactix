@@ -1,12 +1,11 @@
 package engine
 
 import (
-	"slices"
-	"strconv"
 	"errors"
 	"math"
+	"slices"
+	"strconv"
 )
-
 
 func Minimax(board Board, initMove Move) []int {
 	// Returns the optimal action for the current player on the board.
@@ -28,12 +27,11 @@ func PlayMove(userMove string, cfg *Config, gamePlayer Move, playerName string) 
 		return "", errors.New("input a valid number")
 	}
 
-
 	if pos < 1 || pos > 9 {
 		return "", errors.New("number isn't a valid position on the board")
 	}
 
-	switch pos{
+	switch pos {
 	case 1:
 		err := VerifyMove(cfg, 0, 0)
 		if err != nil {
@@ -46,56 +44,56 @@ func PlayMove(userMove string, cfg *Config, gamePlayer Move, playerName string) 
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[0][1] = gamePlayer
 	case 3:
 		err := VerifyMove(cfg, 0, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[0][2] = gamePlayer
 	case 4:
 		err := VerifyMove(cfg, 1, 0)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][0] = gamePlayer
 	case 5:
 		err := VerifyMove(cfg, 1, 1)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][1] = gamePlayer
 	case 6:
 		err := VerifyMove(cfg, 1, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[1][2] = gamePlayer
 	case 7:
 		err := VerifyMove(cfg, 2, 0)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][0] = gamePlayer
 	case 8:
 		err := VerifyMove(cfg, 2, 1)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][1] = gamePlayer
 	case 9:
 		err := VerifyMove(cfg, 2, 2)
 		if err != nil {
 			return "", err
 		}
-		
+
 		cfg.Board[2][2] = gamePlayer
 	}
 
@@ -107,13 +105,11 @@ func PlayMove(userMove string, cfg *Config, gamePlayer Move, playerName string) 
 			gameWinner = "Draw"
 		default:
 			gameWinner = playerName
-		}	
+		}
 	}
 
 	return gameWinner, nil
 }
-
-
 
 func player(board Board, initPlayer Move) Move {
 	// Returns player who has the next turn on a board.
@@ -158,7 +154,6 @@ func actions(board Board) [][]int {
 	return actions
 }
 
-
 func maxValue(board Board, initMove Move) (int, []int) {
 	// Recursively gets the max value from all possible actions for a given board state,
 	//  then returns the best action(max value).
@@ -170,7 +165,7 @@ func maxValue(board Board, initMove Move) (int, []int) {
 
 	value := math.MinInt64
 
-	for _, action := range(actions(board)) {
+	for _, action := range actions(board) {
 		currentValue := value
 
 		newBoard, err := result(board, action, initMove)
@@ -186,7 +181,6 @@ func maxValue(board Board, initMove Move) (int, []int) {
 	}
 
 	return value, optimalAction
-
 }
 
 func minValue(board Board, initMove Move) (int, []int) {
@@ -200,7 +194,7 @@ func minValue(board Board, initMove Move) (int, []int) {
 
 	value := math.MaxInt64
 
-	for _, action := range(actions(board)) {
+	for _, action := range actions(board) {
 		currentValue := value
 
 		newBoard, err := result(board, action, initMove)
@@ -218,7 +212,6 @@ func minValue(board Board, initMove Move) (int, []int) {
 
 	return value, optimalAction
 }
-
 
 func result(board Board, action []int, initMove Move) (Board, error) {
 	// Returns the board that results from making move (i, j) on the board.
@@ -247,13 +240,12 @@ func result(board Board, action []int, initMove Move) (Board, error) {
 	return boardCopy, nil
 }
 
-
 func Terminal(board Board) bool {
 	// Returns true if game is over, false if it isn't.
 	if Winner(board) != EMPTY {
 		return true
 	}
-	
+
 	emptyCell := false
 
 	for _, row := range board {
@@ -261,12 +253,12 @@ func Terminal(board Board) bool {
 			emptyCell = true
 		}
 	}
-	
+
 	return !emptyCell
 }
 
 func utility(board Board) int {
-	// Returns the numerical value for final board state, 
+	// Returns the numerical value for final board state,
 	// X wins - 1, O wins - (-1) and a draw - 0
 	if Winner(board) == X {
 		return 1
@@ -280,14 +272,14 @@ func utility(board Board) int {
 func Winner(board Board) Move {
 	// Returns winner of the gamme if any
 	winningLines := [][][]int{
-		{{0,0},{0,1},{0,2}}, // row 0
-		{{1,0},{1,1},{1,2}}, // row 1
-		{{2,0},{2,1},{2,2}}, // row 2
-		{{0,0},{1,0},{2,0}}, // col 0
-		{{0,1},{1,1},{2,1}}, // col 1
-		{{0,2},{1,2},{2,2}}, // col 2
-		{{0,0},{1,1},{2,2}}, // diag 1
-		{{0,2},{1,1},{2,0}}, // diag 2
+		{{0, 0}, {0, 1}, {0, 2}}, // row 0
+		{{1, 0}, {1, 1}, {1, 2}}, // row 1
+		{{2, 0}, {2, 1}, {2, 2}}, // row 2
+		{{0, 0}, {1, 0}, {2, 0}}, // col 0
+		{{0, 1}, {1, 1}, {2, 1}}, // col 1
+		{{0, 2}, {1, 2}, {2, 2}}, // col 2
+		{{0, 0}, {1, 1}, {2, 2}}, // diag 1
+		{{0, 2}, {1, 1}, {2, 0}}, // diag 2
 	}
 
 	for _, line := range winningLines {
@@ -314,7 +306,6 @@ func Winner(board Board) Move {
 
 	return EMPTY
 }
-
 
 func VerifyMove(cfg *Config, row, col int) error {
 	// Utility function to verify the players move
