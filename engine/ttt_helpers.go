@@ -38,20 +38,20 @@ func coordToInt(action []int) int {
 	return value
 }
 
-func PrintBoard(w io.Writer, cfg *Config) {
+func PrintBoard(w io.Writer, board Board) {
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-			if cfg.Board[i][j] != X && cfg.Board[i][j] != O {
-				cfg.Board[i][j] = EMPTY
+			if board[i][j] != X && board[i][j] != O {
+				board[i][j] = EMPTY
 			}
 		}
 	}
 
-	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", cfg.Board[0][0].String(), cfg.Board[0][1].String(), cfg.Board[0][2].String())
+	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", board[0][0].String(), board[0][1].String(), board[0][2].String())
 	fmt.Fprintln(w, "		-------------")
-	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", cfg.Board[1][0].String(), cfg.Board[1][1].String(), cfg.Board[1][2].String())
+	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", board[1][0].String(), board[1][1].String(), board[1][2].String())
 	fmt.Fprintln(w, "		--------------	")
-	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", cfg.Board[2][0].String(), cfg.Board[2][1].String(), cfg.Board[2][2].String())
+	fmt.Fprintf(w, "		%s  |  %s  |  %s		\n", board[2][0].String(), board[2][1].String(), board[2][2].String())
 	fmt.Fprintln(w)
 }
 
@@ -65,4 +65,3 @@ func stringToMove(input string) Move {
 
 	return EMPTY
 }
-

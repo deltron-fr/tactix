@@ -43,6 +43,7 @@ func PlayAI(rw io.ReadWriter) {
 	}
 
 	userPlayer := stringToMove(userPlayerInput)
+	fmt.Fprintf(rw, "You are %s. Let's start the game!\n", userPlayerInput)
 
 	for {
 		fmt.Fprint(rw, "Player input >> ")
@@ -57,7 +58,7 @@ func PlayAI(rw io.ReadWriter) {
 			fmt.Fprintf(rw, "error: %v\n", err)
 			continue
 		}
-		PrintBoard(rw, gameConfig)
+		PrintBoard(rw, gameConfig.Board)
 
 		if win != "" {
 			if win == "Draw" {
@@ -82,7 +83,7 @@ func PlayAI(rw io.ReadWriter) {
 		aiMove := coordToInt(action)
 
 		win, _ = PlayMove(strconv.Itoa(aiMove), gameConfig, aiPlayer, "AI")
-		PrintBoard(rw, gameConfig)
+		PrintBoard(rw, gameConfig.Board)
 
 		if win != "" {
 			if win == "Draw" {
@@ -95,4 +96,3 @@ func PlayAI(rw io.ReadWriter) {
 		}
 	}
 }
-
